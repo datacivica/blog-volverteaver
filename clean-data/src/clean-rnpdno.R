@@ -10,7 +10,8 @@ if(!require(pacman))install.packages("pacman")
 pacman::p_load(tidyverse, janitor, lubridate, stringr, here)
 
 # === File paths === #
-files <- list(inp_cenapi = here("import/output/cenapi.rds"), 
+files <- list(pob = here("import/output/poblacion.rds"),
+              inp_cenapi = here("import/output/cenapi.rds"), 
               inp_rnpdno_nac = here("import/output/rnpdno-nac.rds"),
               inp_rnpdno_mor = here("import/output/rnpdno-mor.rds"),
               inp_rnpdno_y = here("import/output/rnpdno-mor-year.rds"),
@@ -79,6 +80,10 @@ saveRDS(rnpdno_nac, files$out_rnpdno_nac)
 
 
 # === RNPDNO Morelos por Municipio === #
+pob <- readRDS(files$pob) %>% 
+  filter(cve_ent == "17" & year == 2020) %>% 
+  group_by(municipio, sexo) %>% 
+  summarise(pob = sum(pob))
 
 rnpdno_mor <- readRDS(files$inp_rnpdno_mor) %>% 
   mutate(municipio = str_to_title(municipio),
@@ -92,7 +97,8 @@ rnpdno_mor <- readRDS(files$inp_rnpdno_mor) %>%
                values_to = "tot") %>%
   select(-cve_ent) %>% 
   group_by(municipio, estatus, sexo) %>% 
-  summarise(tot = sum(tot))
+  summarise(tot = sum(tot)) %>% 
+  left_join(pob, by = c("sexo", "municipio"))
 
 saveRDS(rnpdno_mor, files$out_rnpdno_mor)
 

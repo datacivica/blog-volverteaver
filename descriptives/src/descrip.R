@@ -57,12 +57,11 @@ rnpdno_edos %>%
   filter(entidad != "Se Desconoce") %>% 
   group_by(entidad) %>% 
   mutate(total_d = sum(tot),
-         porcent = round(tot/total_d, 4),
-         sexo = factor(sexo, levels = c("Hombres", "Mujeres", "Indeterminado"))) %>% 
+         porcent = round(tot/total_d, 4)) %>% 
   ggplot(aes(x = entidad, y = porcent , fill = reorder(sexo, porcent))) +
   geom_bar(position = "stack", stat = "identity") +
   geom_hline(yintercept = 0.5, color = "red", linetype = "dashed") +
-  scale_fill_manual(values = c("#f4d35e","#f95738", "#0d3b66")) + 
+  scale_fill_manual(values = c("#f4d35e", "#0d3b66", "#f95738")) + 
   scale_y_continuous(breaks = seq(from=0, to=1, by=0.2), labels = scales::percent) +
   coord_flip() +
   labs(title = "Porcentaje de personas desaparecidas y no localizadas", 
@@ -115,8 +114,8 @@ cenapi %>%
   scale_fill_manual(values = c("#f4d35e","#f95738", "#0d3b66")) +
   scale_x_continuous(breaks = seq(from=2010, to=2020, by=1)) +
   scale_y_continuous(breaks = seq(from=0, to=1, by=0.2), labels = scales::percent) +
-  labs(title = "Porcentaje de personas desaparecidas, no localizadas y localizadas por sexo en Morelos",
-       subtitle = "de 2010 a 2020",
+  labs(title = "Porcentaje de personas desaparecidas, no localizadas y localizadas en Morelos",
+       subtitle = "por sexo de 2010 a 2020",
        caption = "Fuente: Elaboración propia con datos del RNPDNO.",
        x = "", y = "", fill = " ") +
   tema +
@@ -129,17 +128,19 @@ ggsave(files$g3_3, width = 10, height = 12)
 ##==== RNPDNO municipios Morelos ====##
 rnpdno_mor %>% 
   filter(sexo != "Indeterminado") %>% 
-  group_by(municipio, sexo) %>% 
+  group_by(municipio, sexo, pob) %>% 
   summarise(tot = sum(tot, na.rm = T)) %>% 
-  ggplot(aes(x=reorder(municipio, tot), y=tot, size=tot, label=tot, fill=sexo, color=sexo)) + 
+  mutate(tasa = round(tot*(100000/pob), 2)) %>% 
+  filter(tasa > 0) %>% 
+  ggplot(aes(x=reorder(municipio, tasa), y=tasa, size=tasa, label=tasa, fill=sexo, color=sexo)) + 
   geom_point(stat='identity') +
   scale_fill_manual(values=c("#f95738", "#0d3b66")) +
   scale_color_manual(values=c("#f95738", "#0d3b66"))+
   geom_text_repel(color="black", size=3, position = position_dodge(1), family = "Barlow Condensed") +
-  labs(title = "Total de personas desaparecidas y no localizadas en Morelos", 
-       subtitle="por municipio y sexo", y="Total de personas registradas como desaparecidas y no localizadas", 
+  labs(title = "Tasa de personas desaparecidas y no localizadas en los municipios de Morelos", 
+       subtitle="por sexo", y="Tasa por 100,000 habitantes", 
        x=" ", fill = " ", color = " ", 
-       caption="Fuente: Elaboración propia con datos del RNPDNO.") + 
+       caption="Fuente: Elaboración propia con datos del RNPDNO y CONAPO.\nSe calcula la tasa dividiendo el acumulado de personas desaparecidas entre la población actual.") + 
   coord_flip() + 
   tema +
   guides(size = F)+
@@ -156,6 +157,7 @@ cenapi %>%
   mutate(tot = ifelse(year == 2020, anualizar(tot, mes_anual), tot)) %>% 
   ggplot(aes(x = year, y = tot, color = sexo)) +
   geom_line(aes(x = year, y = tot), size = 1.5) +
+  geom_point(aes(x = year, y = tot), size = 2) +
   scale_color_manual(values = c("#f95738", "#0d3b66")) +
   scale_x_continuous(breaks = seq(from=2010, to=2020, by=1)) +
   scale_y_continuous(breaks = seq(from=0, to=425, by=50)) +

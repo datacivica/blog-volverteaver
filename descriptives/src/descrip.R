@@ -53,12 +53,26 @@ sesnsp <- readRDS(files$sesnsp)
 
 
 ##==== RNPDNO nacional ====##
-rnpdno_edos %>% 
+nac <- rnpdno_edos %>%
   filter(entidad != "Se Desconoce") %>% 
-  group_by(entidad) %>% 
-  mutate(total_d = sum(tot),
-         porcent = round(tot/total_d, 4)) %>% 
-  ggplot(aes(x = entidad, y = porcent , fill = reorder(sexo, porcent))) +
+  pivot_wider(names_from = sexo, values_from = tot) %>% 
+  rowwise() %>%
+  mutate(total_d = sum(across(Hombres:Indeterminado), na.rm = T),
+         porcent_Mujeres = round(Mujeres/total_d, 3),
+         porcent_Hombres = round(Hombres/total_d, 3),
+         porcent_Indeterminado = round(Indeterminado/total_d, 3))
+
+#Rankee para poder ordenar las barras
+nac$rank <- NA
+order.porcent <- order(nac$porcent_Hombres)
+nac$rank[order.porcent] <- 1:nrow(nac)
+
+nac <- nac %>% 
+  pivot_longer(cols = starts_with("porcent"), names_to = "sexo", names_prefix = "porcent_",
+               values_to = "porcent", values_drop_na = TRUE) %>% 
+  mutate(sexo = factor(sexo, levels = c("Mujeres", "Indeterminado", "Hombres"))) 
+  
+ggplot(nac, aes(x = reorder(entidad, rank), y = porcent , fill = sexo)) +
   geom_bar(position = "stack", stat = "identity") +
   geom_hline(yintercept = 0.5, color = "red", linetype = "dashed") +
   scale_fill_manual(values = c("#f4d35e", "#0d3b66", "#f95738")) + 
@@ -101,7 +115,12 @@ cenapi %>%
 ggsave(files$g2, width = 12, height = 12)
 ggsave(files$g2_2, width = 12, height = 12)
 
+
+missing_row <- data.frame(year = 2010, sexo = "Mujeres", estatus ="Localizado sin vida", 
+                          fuente = "RNPDNO", tot = 0) #Arreglamos la base para el geom_area con un 0
+
 cenapi %>% 
+  rbind(missing_row) %>% 
   filter(fuente == "RNPDNO" & year >= 2010) %>% 
   group_by(year, sexo, estatus) %>% 
   summarise(tot = sum(tot, na.rm = T)) %>% 
@@ -182,13 +201,14 @@ sesnsp <- sesnsp %>%
          tasa = round(total*(100000/pob), 2),
          nombre = case_when(delito == "Homicidio + Feminicidio" & tasa > 60 ~ 1,
                             delito == "Otros delitos que atentan contra la libertad personal" & tasa >20 ~ 1,
-                            delito == "Trata de personas" & tasa > 1 ~ 1)) 
+                            delito == "Trata de personas" & tasa > 0.8 ~ 1)) 
 
   
   ggplot(sesnsp, aes(x = year, y = tasa)) +
-  geom_point(aes(color = tasa), size = 4, shape = 20, color = "#0d3b66", position = "jitter") +
+  geom_point(aes(color = tasa), size = 4, shape = 20, color = "#0d3b66", position = "jitter", alpha = .5) +
   geom_label_repel(data = subset(sesnsp, nombre == 1), aes(x = year, y = tasa, label = municipio), size = 2) + 
   facet_wrap(~delito, scales = "free", nrow = 3) + 
+  scale_x_continuous(breaks = seq(from=2015, to=2020, by=1)) +
   labs(title = "Tasa de carpetas de investigación de delitos relacionados con desaparición", 
        subtitle="", y="Tasa por cada 100,000 personas", 
        x=" ", fill = " ", color = " ", 

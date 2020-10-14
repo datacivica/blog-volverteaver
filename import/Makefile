@@ -22,8 +22,6 @@ all: output/cenapi.rds \
 clean:
 	rm output/*
 
-INPUTS := $(shell find $(HERE)/import/input -name '*.csv')
-
 OUTPUTS := output/cenapi.rds \
 	 output/nombre-entidad.rds \
 	 output/poblacion.rds \
@@ -32,7 +30,7 @@ OUTPUTS := output/cenapi.rds \
 	 output/rnpdno-nsv.rds \
 	 output/sesnsp.rds
 
-$(OUTPUTS): src/import.R $(INPUTS)
+$(OUTPUTS): src/import.R
 	Rscript --vanilla $<
 
 # done.

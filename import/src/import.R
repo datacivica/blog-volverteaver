@@ -7,7 +7,7 @@
 # datos-volverteaver/import/src/import.R
 
 if(!require(pacman))install.packages("pacman")
-pacman::p_load(tidyverse, janitor, data.table, readxl, stringr, here)
+pacman::p_load(tidyverse, janitor, data.table, readxl, here)
 
 # === File paths === #
 file_paths = list(input = here("import/input/"),
@@ -17,8 +17,7 @@ file_paths = list(input = here("import/input/"),
                   rnpdno_nac = here("import/output/rnpdno-nac.rds"),
                   rnpdno_y = here("import/output/rnpdno-mor-year.rds"),
                   rnpdno_mor = here("import/output/rnpdno-mor.rds")
-)
-
+                  )
 
 # === CENAPI === #
 print("working on CENAPI")
@@ -28,10 +27,9 @@ cenapi <- fread(paste0(file_paths$input, "cenapi/cenapi.csv")) %>%
   rename(nom_ent = estado,
          cve_ent = clave_estado,
          estatus = vivo_o_muerto) %>% 
-  mutate(cve_ent = formatC(cve_ent, width = 2, flag = 0, format = "d"))
+  mutate(cve_ent = str_pad(cve_ent, width = 2, side = "left", pad = "0"))
 
 saveRDS(cenapi, file_paths$cenapi)
-
 
 # === RNPDNO === #
 print("working on rnpdno")
@@ -47,7 +45,7 @@ for (i in 1:length(rnpdno_mor_files)) {
   tempo <- fread(paste0(rnpdno_mor_path, rnpdno_mor_files[i])) %>% 
     clean_names() %>% 
     mutate(cve_ent = parse_number(rnpdno_mor_files[i]),
-           cve_ent = formatC(cve_ent, width = 2, flag = 0, format = "d"),
+           cve_ent = str_pad(cve_ent, width = 2, side = "left", pad = "0"),
            estatus = str_extract(rnpdno_mor_files[i], "[^_]+"),
            estatus = case_when(estatus=="d" ~ "Aún sin localizar",
                                estatus=="lcv" ~ "Localizado con vida",
@@ -104,22 +102,21 @@ sesnsp <- read_csv(paste0(file_paths$input, "sesnsp/IDM_NM_ago2020.csv"), locale
   rename(year = ano,
          cve_ent = clave_ent,
          cve_mun = cve_municipio) %>% 
-  mutate(cve_ent = formatC(cve_ent, width = 2, format = "d", flag = "0"))
-print("writing on sesnsp")
+  mutate(cve_ent = str_pad(cve_ent, width = 2, side = "left", pad = "0"))
+print("writing sesnsp")
 saveRDS(sesnsp, file_paths$sesnsp)
-
 
 # === POBLACIÓN === #
 print("working on pob-mun")
 pob <- fread(paste0(file_paths$input, "municipios_sexo_15-30.csv")) %>% 
   rename(year = ano,
          cve_ent = clave_ent,
-         cve_mun = clave,
+         inegi = clave,
          municipio = mun,
          entidad = nom_ent) %>% 
-  mutate(cve_ent = formatC(cve_ent, width = 2, format = "d", flag = "0"))
+  mutate(cve_ent = str_pad(cve_ent, width = 2, side = "left", pad = "0"),
+         inegi = str_pad(inegi, width = 5, side = "left", pad = "0"))
 print("writing on pob")
 saveRDS(pob, file_paths$pob)
-
 
 # done.

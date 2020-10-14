@@ -7,8 +7,6 @@
 # datoss-volverteaver/import/Makefile
 #
 
-HERE := $(shell Rscript --vanilla -e 'write(here::here(), stdout())')
-
 .PHONY: all clean
 
 all: output/cenapi.rds \

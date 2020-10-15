@@ -1,4 +1,4 @@
-# Author: Mariana S
+# Author: OE 
 # Maintainer(s): OE, MS, AF
 # License: (c) Data Cívica 2020
 #
